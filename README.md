@@ -1,65 +1,80 @@
-# codesense README
+# CodeSense
 
-This is the README for your extension "codesense". After writing up a brief description, we recommend including the following sections.
+CodeSense is a VS Code extension that analyzes code quality using a hybrid approach of linters and LLM-based analysis. It evaluates code for structural integrity, variable naming conventions and logical consistency. CodeSense also provides actionable insights and fixes to improve code maintainability and productivity.
 
-## Features
+## Prerequisites
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+Ensure the following are installed on your machine:
 
-For example if there is an image subfolder under your extension project workspace:
+- [Node.js](https://nodejs.org/) (v18+ recommended)
+- [Python](https://www.python.org/) (v3.10+ recommended)
+- [VS Code](https://code.visualstudio.com/)
+- [Ollama](https://ollama.ai/) (for running CodeLlama locally)
 
-\!\[feature X\]\(images/feature-x.png\)
+## Installation
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+1. Clone the repository:
 
-## Requirements
+   ```bash
+   git clone https://github.com/your-username/CodeSense.git
+   cd CodeSense
+   ```
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+2. Install dependencies:
 
-## Extension Settings
+   ```bash
+   npm install
+   ```
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+3. Set up the Python environment:
 
-For example:
+   Ensure `pylint` is installed:
 
-This extension contributes the following settings:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows use 'venv\Scripts\activate'
+   pip install pylint
+   ```
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+4. Install and set up **Ollama**:
 
-## Known Issues
+   Download and configure [Ollama](https://ollama.com/), and ensure the CodeLlama 7B model is available.
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+   ```bash
+   ollama run codellama:7b
+   ```
 
-## Release Notes
+## Running CodeSense Locally
 
-Users appreciate release notes as you update your extension.
+1. Open the project in VS Code:
 
-### 1.0.0
+   ```bash
+   code .
+   ```
 
-Initial release of ...
+2. Open the extension.js file
 
-### 1.0.1
+3. Click F5 to open the [Extension Development Host]
 
-Fixed issue #.
+4. Start analyzing code:
 
-### 1.1.0
+   - Open any code file.
+   - On save (`Ctrl+S`), PyLint runs and displays diagnostics.
 
-Added features X, Y, and Z.
+## Contribution
 
----
+Contributions are welcome! If you'd like to improve CodeSense:
 
-## Working with Markdown
+1. Fork the repository.
+2. Create a feature branch.
+3. Submit a pull request with a clear description.
 
-You can author your README using Visual Studio Code.  Here are some useful editor keyboard shortcuts:
+## Future Enhancements
 
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux)
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux)
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets
+- Support for additional linters (e.g., ESLint, MyPy).
+- Deeper integration with LLM for enhanced fix generation.
+- Improved performance optimization for large codebases.
 
-## For more information
+## Feedback
 
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+Feel free to open an issue for bugs, suggestions, or questions.
