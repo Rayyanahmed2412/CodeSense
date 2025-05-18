@@ -16,7 +16,7 @@ Ensure the following are installed on your machine:
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/your-username/CodeSense.git
+   git clone https://github.com/Rayyanahmed2412/CodeSense.git
    cd CodeSense
    ```
 
@@ -32,7 +32,7 @@ Ensure the following are installed on your machine:
 
    ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows use 'venv\Scripts\activate'
+   venv\Scripts\activate
    pip install pylint
    ```
 
@@ -60,6 +60,7 @@ Ensure the following are installed on your machine:
 
    - Open any code file.
    - On save (`Ctrl+S`), PyLint runs and displays diagnostics.
+   - Open Command Palette (`Ctrl+Shift+P`) and run the command "CodeSense: Generate Fixed Code"
 
 ## Contribution
 
