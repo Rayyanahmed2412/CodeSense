@@ -18,6 +18,10 @@
       {
         "command": "codesense.helloWorld",
         "title": "Hello World"
+      },
+      {
+        "command": "codesense.generateFixedCode",
+        "title": "CodeSense: Generate Fixed Code"
       }
     ]
   },
@@ -36,6 +40,7 @@
   },
   "dependencies": {
     "axios": "^1.8.4",
+    "node-fetch": "^3.3.2",
     "ollama": "^0.5.14",
     "zod": "^3.24.2",
     "zod-to-json-schema": "^3.24.5"
