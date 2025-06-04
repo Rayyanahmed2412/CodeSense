@@ -35,8 +35,7 @@ function runLinter(document) {
       });
 
       linter.on("close", () => {
-        let fileUri = vscode.window.activeTextEditor?.document.uri;
-        createDiagnostics(fileUri);
+        createDiagnostics(document.uri);
       });
     });
   }
@@ -47,18 +46,14 @@ function createDiagnostics(fileUri) {
   const parsedErrors = outputLines
     .map((line) => {
       const match = line.match(/:(\d+):(\d+):\s([A-Z]\d{4}):\s(.+)/);
-
       if (match) {
         const [, lineNo, colNo, errorCode, message] = match;
-        let severity = null;
-
-        if (errorCode.startsWith("F") || errorCode.startsWith("E")) {
-          severity = vscode.DiagnosticSeverity.Error;
-        } else if (errorCode.startsWith("I")) {
-          severity = vscode.DiagnosticSeverity.Information;
-        } else {
-          severity = vscode.DiagnosticSeverity.Warning;
-        }
+        let severity =
+          errorCode.startsWith("F") || errorCode.startsWith("E")
+            ? vscode.DiagnosticSeverity.Error
+            : errorCode.startsWith("I")
+            ? vscode.DiagnosticSeverity.Information
+            : vscode.DiagnosticSeverity.Warning;
 
         return {
           line: parseInt(lineNo, 10),
@@ -67,21 +62,21 @@ function createDiagnostics(fileUri) {
           severity,
         };
       }
-
       return null;
     })
     .filter(Boolean);
 
-  let diagnosticList = [];
-  parsedErrors.forEach(({ line, column, message, severity }) => {
-    let startPosition = new vscode.Position(line - 1, column);
-    let endPosition = new vscode.Position(line - 1, column);
-    let range = new vscode.Range(startPosition, endPosition);
-    let diagnostic = new vscode.Diagnostic(range, message, severity);
-    diagnosticList.push(diagnostic);
-  });
+  let diagnosticList = parsedErrors.map(
+    ({ line, column, message, severity }) => {
+      let range = new vscode.Range(
+        new vscode.Position(line - 1, column),
+        new vscode.Position(line - 1, column)
+      );
+      return new vscode.Diagnostic(range, message, severity);
+    }
+  );
 
-  if (fileUri != undefined) {
+  if (fileUri) {
     diagnosticCollection.set(fileUri, diagnosticList);
   }
 }
@@ -90,16 +85,15 @@ const LOGIC_FIX_PROMPT = `[INST] <<SYS>>
 You are a strict Python code fixer. The input Python code always contains at least one logical or syntax error. You must identify and correct these. Output only the corrected Python code, with NO extra text or formatting.
 <</SYS>>
 
-# Example:
 Input:
-def is_even(n):
-    return n % 2 == 1
+{code}
 
 Output:
-def is_even(n):
-    return n % 2 == 0
+[/INST]`;
 
----
+const SYNTAX_FIX_PROMPT = `[INST] <<SYS>>
+You are a code transformation agent. Your task is to fix syntax errors in the provided Python code. Output only the corrected Python code with no explanations or formatting.
+<</SYS>>
 
 Input:
 {code}
@@ -108,7 +102,7 @@ Output:
 [/INST]`;
 
 const PYLINT_FIX_PROMPT = `[INST] <<SYS>>
-You are a code transformation agent. Your task is to fix syntax errors in the provided Python code based on the given Pylint output. Output only the corrected Python code with no explanations, no commentary, and no Markdown formatting.
+You are a code transformation agent. Your task is to fix remaining Pylint errors in the provided Python code based on the given Pylint output. Output only the corrected Python code with no explanations or formatting.
 <</SYS>>
 
 Python code:
@@ -117,17 +111,8 @@ Python code:
 Pylint output:
 {linterOutput}
 
-Instructions:
-- Output only the corrected Python code.
+Output:
 [/INST]`;
-
-function extractLastOutput(result) {
-  const lastOutputIndex = result.lastIndexOf("Output:");
-  if (lastOutputIndex === -1) {
-    return result.trim();
-  }
-  return result.substring(lastOutputIndex + "Output:".length).trim();
-}
 
 async function runOllamaPrompt(prompt, code, linterOutput = "") {
   const formattedPrompt = prompt
@@ -139,9 +124,7 @@ async function runOllamaPrompt(prompt, code, linterOutput = "") {
       options: { temperature: 0.1 },
       messages: [{ role: "user", content: formattedPrompt }],
     });
-
-    const output = response.message.content.trim();
-    return extractLastOutput(output);
+    return response.message.content.trim();
   } catch (error) {
     throw new Error(`Error running Ollama prompt: ${error.message}`);
   }
@@ -154,8 +137,7 @@ async function generateFixedCodeHandler() {
     return;
   }
 
-  const document = editor.document;
-  let code = document.getText();
+  let code = editor.document.getText();
 
   await vscode.window.withProgress(
     {
@@ -165,15 +147,15 @@ async function generateFixedCodeHandler() {
     },
     async (progress) => {
       try {
-        // Step 1: Fix logical errors
         progress.report({ message: "Fixing logical errors..." });
         code = await runOllamaPrompt(LOGIC_FIX_PROMPT, code);
 
-        // Step 2: Fix Pylint syntax errors
-        progress.report({ message: "Fixing Pylint syntax errors..." });
+        progress.report({ message: "Fixing syntax errors..." });
+        code = await runOllamaPrompt(SYNTAX_FIX_PROMPT, code);
+
+        progress.report({ message: "Fixing remaining Pylint errors..." });
         code = await runOllamaPrompt(PYLINT_FIX_PROMPT, code, linterOutput);
 
-        // Display the final corrected code
         const doc = await vscode.workspace.openTextDocument({
           content: code,
           language: "python",
@@ -189,18 +171,13 @@ async function generateFixedCodeHandler() {
 }
 
 function activate(context) {
-  console.log('Congratulations, your extension "codesense" is now active!');
-
-  let static_analysis = vscode.workspace.onDidSaveTextDocument((document) => {
-    runLinter(document);
-  });
-
-  let generateFixedCode = vscode.commands.registerCommand(
-    "codesense.generateFixedCode",
-    generateFixedCodeHandler
+  context.subscriptions.push(
+    vscode.workspace.onDidSaveTextDocument(runLinter),
+    vscode.commands.registerCommand(
+      "codesense.generateFixedCode",
+      generateFixedCodeHandler
+    )
   );
-
-  context.subscriptions.push(generateFixedCode, static_analysis);
 }
 
 function deactivate() {}
